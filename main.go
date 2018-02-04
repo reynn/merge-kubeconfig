@@ -13,13 +13,15 @@ import (
 )
 
 var (
-	output  string
-	outPath string
+	output    string
+	outPath   string
+	namespace string
 )
 
 func init() {
 	flag.StringVar(&output, "out", "text", "How to display the result, should be text or YAML.")
-	flag.StringVar(&outPath, "outPath", "config", "Where to write the file if out is set to YAML")
+	flag.StringVar(&outPath, "outPath", "config", "Where to write the file if out is set to YAML.")
+	flag.StringVar(&namespace, "namespace", "", "The namespace to use for all contexts.")
 	flag.Parse()
 }
 
@@ -90,8 +92,9 @@ func handleMerge(configs []*types.Config) *types.Config {
 		context := &types.Context{
 			Name: fmt.Sprintf("%s-context", cluster.Name),
 			Context: types.SubContext{
-				Cluster: cluster.Name,
-				User:    user.Name,
+				Cluster:   cluster.Name,
+				User:      user.Name,
+				Namespace: namespace,
 			},
 		}
 

@@ -40,6 +40,7 @@ type Context struct {
 	Context SubContext `yaml:"context"`
 }
 type SubContext struct {
-	Cluster string `yaml:"cluster"`
-	User    string `yaml:"user"`
+	Cluster   string `yaml:"cluster"`
+	User      string `yaml:"user"`
+	Namespace string `yaml:"namespace"`
 }
