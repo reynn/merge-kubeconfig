@@ -1,4 +1,4 @@
-package main
+package types
 
 type Config struct {
 	ApiVersion     string      `yaml:"apiVersion"`

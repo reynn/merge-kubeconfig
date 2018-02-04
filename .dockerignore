@@ -1,0 +1,5 @@
+*.yaml
+config
+.idea/
+vendor/
+!glide.yaml
