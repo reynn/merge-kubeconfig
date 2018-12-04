@@ -2,11 +2,12 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
-
-	"flag"
+	"path"
 
 	"github.com/reynn/merge-kubeconfig/types"
 	"gopkg.in/yaml.v2"
@@ -19,34 +20,24 @@ var (
 )
 
 func init() {
-	flag.StringVar(&output, "out", "text", "How to display the result, should be text or YAML.")
+	flag.StringVar(&output, "out", "yaml", "How to display the result, should be text or YAML.")
 	flag.StringVar(&outPath, "outPath", "config", "Where to write the file if out is set to YAML.")
 	flag.StringVar(&namespace, "namespace", "", "The namespace to use for all contexts.")
 	flag.Parse()
 }
 
-func fileExists(path string) bool {
-	if _, err := os.Stat(path); err == nil {
-		return true
-	}
-	return false
-}
-
 func loadConfigFile(path string) ([]byte, error) {
-	if fileExists(path) {
-		f, err := os.Open(path)
-		if err == nil {
-			defer f.Close()
-			reader := bufio.NewReader(f)
-			if bytes, err := ioutil.ReadAll(reader); err == nil {
-				return bytes, nil
-			} else {
-				return nil, err
-			}
-		}
+	f, err := os.Open(path)
+	if err != nil {
 		return nil, err
 	}
-	return nil, fmt.Errorf("file does not exist [%s]", path)
+	defer f.Close()
+	reader := bufio.NewReader(f)
+	if bytes, err := ioutil.ReadAll(reader); err == nil {
+		return bytes, nil
+	} else {
+		return nil, err
+	}
 }
 
 func unmarshalYAML(contents []byte) (*types.Config, error) {
@@ -67,11 +58,9 @@ func writeOutYaml(c *types.Config) error {
 	case output == "text":
 		fmt.Printf("%s\n", newConfig)
 		return nil
-	case output == "yaml":
+	default:
 		fmt.Printf("Writing file %s...\n", outPath)
 		return ioutil.WriteFile(outPath, newConfig, 0777)
-	default:
-		return fmt.Errorf("the provided output type is invalid. [%s]", output)
 	}
 }
 
@@ -110,6 +99,21 @@ func handleMerge(configs []*types.Config) *types.Config {
 
 func main() {
 	files := flag.Args()
+	if len(files) == 0 {
+		localFiles, err := ioutil.ReadDir(".")
+		if err != nil {
+			log.Fatalf("no localFiles provided, unable to read from the current directory")
+		}
+		for _, f := range localFiles {
+			ext := path.Ext(f.Name())
+			if ext == ".yaml" {
+				files = append(files, f.Name())
+			}
+		}
+		if len(files) == 0 {
+			log.Fatalf("No files available to merge")
+		}
+	}
 	var configs []*types.Config
 	for _, file := range files {
 		if bytes, err := loadConfigFile(file); err == nil {
@@ -128,5 +132,7 @@ func main() {
 		}
 	}
 	outConfig := handleMerge(configs)
-	writeOutYaml(outConfig)
+	if e := writeOutYaml(outConfig); e != nil {
+		log.Fatalf("Failed to write to %s [%v]")
+	}
 }

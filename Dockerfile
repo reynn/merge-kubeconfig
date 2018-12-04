@@ -1,15 +1,13 @@
-FROM golang:1.10.0-alpine3.7 as BUILD
+FROM golang:1.11.2-alpine3.8 as BUILD
 
-WORKDIR /go/src/github.com/reynn/merge-kubeconfig
+WORKDIR /go/merge
 
 COPY . .
 
-RUN apk add --updaate --no-cache git \
-    && go get -u -v github.com/golang/dep/cmd/dep \
-    && dep ensure \
-    && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /tmp/merge-config .
+RUN apk add --update --no-cache git \
+    && GO111MODULE=on CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /tmp/merge-config .
 
-FROM alpine:3.7
+FROM alpine:3.8
 
 COPY --from=BUILD /tmp/merge-config /usr/bin/merge-config
 
